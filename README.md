@@ -1,6 +1,10 @@
 # Shakti-Setu — Women's Legal Empowerment Platform
 
+[![GitHub Repository](https://img.shields.io/badge/GitHub-Repository-blue?logo=github)](https://github.com/pranjal-v7/Shakti-Setu)
+
 A full-stack web application that connects women in India with legal information, helplines, lawyers, and an AI legal assistant. The platform supports user registration, lawyer onboarding (with admin approval), consultation requests, in-app chat, a legal knowledge base (“Know Your Rights”), dashboard insights powered by AI, reporting, and admin moderation.
+
+**Repository URL:** [https://github.com/pranjal-v7/Shakti-Setu](https://github.com/pranjal-v7/Shakti-Setu)
 
 ---
 
