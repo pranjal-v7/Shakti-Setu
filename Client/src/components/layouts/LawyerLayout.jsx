@@ -1,8 +1,8 @@
 import { useContext, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import {
-  LayoutDashboard, Users, MessageCircle, CheckCircle,
-  User, LogOut, Globe, Menu, X, Scale, BookOpen, Phone, Shield,
+  LayoutDashboard, Users, MessageCircle,
+  User, LogOut, Globe, Menu, X, Scale, BookOpen, Phone,
   ChevronRight,
 } from 'lucide-react';
 import { AppContext } from '../../context/AppContext';
@@ -12,7 +12,6 @@ const NAV = [
   { id: 'lawyer-dashboard',  label: 'Dashboard',          icon: LayoutDashboard },
   { id: 'lawyer-clients',    label: 'My Clients',          icon: Users },
   { id: 'chat',              label: 'Live Chat',           icon: MessageCircle },
-  { id: 'lawyer-verify',     label: 'Verification',        icon: CheckCircle },
   { id: 'legal-guide',       label: 'Legal Resources',     icon: BookOpen },
   { id: 'resources',         label: 'Helplines',           icon: Phone },
   { id: 'lawyer-profile',    label: 'My Profile',          icon: User },
@@ -35,31 +34,27 @@ const LawyerLayout = ({ children }) => {
 
   const NavItem = ({ item }) => {
     const active = page === item.id;
-    const locked = status !== 'approved' && !['lawyer-verify', 'lawyer-profile'].includes(item.id);
 
     return (
       <button
         id={`lawyer-nav-${item.id}`}
-        onClick={() => { if (!locked) { setPage(item.id); setMobileOpen(false); } }}
-        title={locked ? 'Available after verification' : item.label}
+        onClick={() => { setPage(item.id); setMobileOpen(false); }}
         style={{
           display: 'flex', alignItems: 'center', gap: '12px',
           width: '100%', padding: '11px 14px', borderRadius: '12px',
           background: active ? 'rgba(245,158,11,0.2)' : 'transparent',
           border: active ? '1px solid rgba(245,158,11,0.35)' : '1px solid transparent',
-          color: locked ? 'var(--text-3)' : active ? '#FCD34D' : 'var(--text-2)',
+          color: active ? '#FCD34D' : 'var(--text-2)',
           fontWeight: active ? 600 : 400, fontSize: '0.88rem',
-          cursor: locked ? 'not-allowed' : 'pointer',
+          cursor: 'pointer',
           textAlign: 'left', transition: 'all 0.15s',
-          opacity: locked ? 0.5 : 1,
         }}
-        onMouseEnter={e => { if (!active && !locked) { e.currentTarget.style.background = 'rgba(255,255,255,0.05)'; e.currentTarget.style.color = 'var(--text-1)'; } }}
-        onMouseLeave={e => { if (!active && !locked) { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--text-2)'; } }}
+        onMouseEnter={e => { if (!active) { e.currentTarget.style.background = 'rgba(255,255,255,0.05)'; e.currentTarget.style.color = 'var(--text-1)'; } }}
+        onMouseLeave={e => { if (!active) { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--text-2)'; } }}
       >
         <item.icon size={17} />
         <span>{item.label}</span>
         {active && <ChevronRight size={14} style={{ marginLeft: 'auto', opacity: 0.6 }} />}
-        {locked && <span style={{ marginLeft: 'auto', fontSize: '0.65rem', color: 'var(--text-3)' }}>🔒</span>}
       </button>
     );
   };
