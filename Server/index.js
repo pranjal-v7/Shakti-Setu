@@ -20,6 +20,9 @@ app.use(express.json());
 // Serve uploaded files statically
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
+// Health check for Render
+app.get('/healthz', (req, res) => res.status(200).json({ status: 'ok' }));
+
 // Routes
 app.use('/api/auth', require('./routes/authRoutes'));
 app.use('/api/dashboard', require('./routes/dashboardRoutes'));
@@ -32,12 +35,32 @@ app.use('/api/articles', require('./routes/articleRoutes'));
 
 // MongoDB Connection
 const connectDB = async () => {
+  const uri = process.env.MONGODB_URI || 'mongodb://localhost:27017/shakti-setu';
   try {
-    await mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/shakti-setu');
-    console.log('MongoDB Connected');
+    await mongoose.connect(uri, { serverSelectionTimeoutMS: 3000 });
+    console.log('MongoDB Connected to:', uri);
   } catch (error) {
-    console.error('MongoDB connection error:', error);
-    process.exit(1);
+    if (uri.includes('localhost') || uri.includes('127.0.0.1')) {
+      console.log('Local MongoDB not running. Trying to spin up mongodb-memory-server...');
+      try {
+        const { MongoMemoryServer } = require('mongodb-memory-server');
+        const mongoServer = await MongoMemoryServer.create({
+          binary: {
+            version: '4.4.24'
+          }
+        });
+        const mongoUri = mongoServer.getUri();
+        await mongoose.connect(mongoUri);
+        console.log('MongoDB Connected to in-memory database:', mongoUri);
+      } catch (memError) {
+        console.error('Failed to start mongodb-memory-server:', memError);
+        console.error('Original connection error:', error);
+        process.exit(1);
+      }
+    } else {
+      console.error('MongoDB connection error:', error);
+      process.exit(1);
+    }
   }
 };
 
