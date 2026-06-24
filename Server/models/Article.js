@@ -45,6 +45,5 @@ const articleSchema = new mongoose.Schema({
 });
 
 articleSchema.index({ category: 1 });
-articleSchema.index({ slug: 1 });
 
 module.exports = mongoose.model('Article', articleSchema);
