@@ -22,6 +22,7 @@ import Chat from './Chat/Chat';
 
 // Lawyer portal
 import LawyerProfile from './Lawyer/LawyerProfile';
+import LawyerDashboard from './Lawyer/LawyerDashboard';
 import LawyerVerification from './Lawyer/LawyerVerification';
 import ConsultationManagement from './Lawyer/ConsultationManagement';
 
@@ -48,7 +49,7 @@ const PageRouter = () => {
   // Lawyer portal routes
   if (isLawyerAuth) {
     switch (page) {
-      case 'lawyer-dashboard': return <LawyerProfile />;
+      case 'lawyer-dashboard': return <LawyerDashboard />;
       case 'lawyer-verify':    return <LawyerVerification />;
       case 'lawyer-clients':   return <ConsultationManagement />;
       case 'lawyer-profile':   return <LawyerProfile />;
