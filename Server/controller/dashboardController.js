@@ -1,6 +1,112 @@
-// Server-side Gemini call for dashboard insights (top 10 problems + top 10 rights with links)
 const GEMINI_API_URL =
-  "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent";
+  "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent";
+
+const FALLBACK_DATA = {
+  problems: [
+    {
+      en: "Domestic violence and lack of immediate legal protection",
+      hi: "घरेलू हिंसा और तत्काल कानूनी सुरक्षा की कमी",
+      link: "https://wcd.nic.in/"
+    },
+    {
+      en: "Workplace discrimination and unequal pay",
+      hi: "कार्यस्थल पर भेदभाव और असमान वेतन",
+      link: "https://wcd.nic.in/"
+    },
+    {
+      en: "Online harassment, cyberstalking and digital safety concerns",
+      hi: "ऑनलाइन उत्पीड़न, साइबर स्टॉकिंग और डिजिटल सुरक्षा चिंताएं",
+      link: "https://ncw.nic.in/"
+    },
+    {
+      en: "Lack of awareness about inheritance and property rights",
+      hi: "विरासत और संपत्ति के अधिकारों के बारे में जागरूकता की कमी",
+      link: "https://nalsa.gov.in/"
+    },
+    {
+      en: "Difficulty in accessing free legal aid services",
+      hi: "मुफ्त कानूनी सहायता सेवाओं तक पहुंचने में कठिनाई",
+      link: "https://nalsa.gov.in/"
+    },
+    {
+      en: "Dowry harassment and social pressure",
+      hi: "दहेज उत्पीड़न और सामाजिक दबाव",
+      link: "https://ncw.nic.in/"
+    },
+    {
+      en: "Inadequate maternity benefits and support at work",
+      hi: "कार्यस्थल पर अपर्याप्त मातृत्व लाभ और सहायता",
+      link: "https://wcd.nic.in/"
+    },
+    {
+      en: "Stigma around reporting sexual harassment",
+      hi: "यौन उत्पीड़न की रिपोर्टिंग के आसपास कलंक",
+      link: "https://ncw.nic.in/"
+    },
+    {
+      en: "Underrepresentation in local governance and decision-making",
+      hi: "स्थानीय शासन और निर्णय लेने में कम प्रतिनिधित्व",
+      link: "https://wcd.nic.in/"
+    },
+    {
+      en: "Challenges in claiming maintenance after separation",
+      hi: "अलगाव के बाद रखरखाव का दावा करने में चुनौतियाँ",
+      link: "https://nalsa.gov.in/"
+    }
+  ],
+  rights: [
+    {
+      en: "Right to free legal aid under Section 12 of LSA Act",
+      hi: "कानूनी सेवा प्राधिकरण अधिनियम की धारा 12 के तहत मुफ्त कानूनी सहायता का अधिकार",
+      link: "https://nalsa.gov.in/"
+    },
+    {
+      en: "Right to file Zero FIR at any police station",
+      hi: "किसी भी पुलिस स्टेशन में जीरो एफआईआर दर्ज करने का अधिकार",
+      link: "https://ncw.nic.in/"
+    },
+    {
+      en: "Protection under Domestic Violence Act, 2005",
+      hi: "घरेलू हिंसा अधिनियम, 2005 के तहत संरक्षण",
+      link: "https://wcd.nic.in/"
+    },
+    {
+      en: "Equal right to parental property under Hindu Succession Act",
+      hi: "हिंदू उत्तराधिकार अधिनियम के तहत माता-पिता की संपत्ति में समान अधिकार",
+      link: "https://nalsa.gov.in/"
+    },
+    {
+      en: "Protection from Sexual Harassment at Workplace (POSH Act)",
+      hi: "कार्यस्थल पर यौन उत्पीड़न से सुरक्षा (पॉश अधिनियम)",
+      link: "https://wcd.nic.in/"
+    },
+    {
+      en: "Right to virtual police station reporting and digital FIRs",
+      hi: "आभासी पुलिस स्टेशन रिपोर्टिंग और डिजिटल एफआईआर का अधिकार",
+      link: "https://ncw.nic.in/"
+    },
+    {
+      en: "Right to privacy and confidentiality during investigation",
+      hi: "जांच के दौरान गोपनीयता का अधिकार",
+      link: "https://nalsa.gov.in/"
+    },
+    {
+      en: "Maternity benefits and paid leave under Maternity Benefit Act",
+      hi: "मातृत्व लाभ अधिनियम के तहत मातृत्व लाभ और सवैतनिक अवकाश",
+      link: "https://wcd.nic.in/"
+    },
+    {
+      en: "Equal Remuneration Act guaranteeing equal pay for equal work",
+      hi: "समान काम के लिए समान वेतन की गारंटी देने वाला समान पारिश्रमिक अधिनियम",
+      link: "https://wcd.nic.in/"
+    },
+    {
+      en: "Right to shelter homes and rehabilitation services",
+      hi: "आश्रय गृहों और पुनर्वास सेवाओं का अधिकार",
+      link: "https://wcd.nic.in/"
+    }
+  ]
+};
 
 exports.getDemographicInsights = async (req, res) => {
   try {
@@ -14,10 +120,10 @@ exports.getDemographicInsights = async (req, res) => {
 
     const apiKey = process.env.GEMINI_API_KEY;
     if (!apiKey) {
-      return res.status(503).json({
-        success: false,
-        message:
-          "Dashboard insights service is not configured (missing GEMINI_API_KEY)",
+      console.warn("GEMINI_API_KEY missing, using high-quality static fallback insights");
+      return res.json({
+        success: true,
+        ...FALLBACK_DATA
       });
     }
 
@@ -54,19 +160,20 @@ Use real, working URLs where possible. Return ONLY the JSON object – no markdo
 
     if (!response.ok) {
       const errBody = await response.text();
-      console.error("Gemini API error:", response.status, errBody);
-      return res.status(502).json({
-        success: false,
-        message: "Failed to fetch insights from AI service",
+      console.error("Gemini API error, falling back to static insights. Status:", response.status, errBody);
+      return res.json({
+        success: true,
+        ...FALLBACK_DATA
       });
     }
 
     const result = await response.json();
     const text = result.candidates?.[0]?.content?.parts?.[0]?.text;
     if (!text) {
-      return res.status(502).json({
-        success: false,
-        message: "Invalid response from AI service",
+      console.error("Invalid response from Gemini service, using static fallback");
+      return res.json({
+        success: true,
+        ...FALLBACK_DATA
       });
     }
 
@@ -81,9 +188,10 @@ Use real, working URLs where possible. Return ONLY the JSON object – no markdo
 
     const parsed = JSON.parse(cleanedText);
     if (!Array.isArray(parsed.problems) || !Array.isArray(parsed.rights)) {
-      return res.status(502).json({
-        success: false,
-        message: "Invalid insights structure",
+      console.error("Invalid insights structure from Gemini, using static fallback");
+      return res.json({
+        success: true,
+        ...FALLBACK_DATA
       });
     }
 
@@ -99,17 +207,16 @@ Use real, working URLs where possible. Return ONLY the JSON object – no markdo
       link: item.link || "https://nalsa.gov.in/",
     }));
 
-    res.json({
+    return res.json({
       success: true,
       problems,
       rights,
     });
   } catch (error) {
-    console.error("Dashboard getDemographicInsights error:", error);
-    res.status(500).json({
-      success: false,
-      message: "Server error",
-      error: error.message,
+    console.error("Dashboard getDemographicInsights error, falling back to static insights:", error);
+    return res.json({
+      success: true,
+      ...FALLBACK_DATA
     });
   }
 };

@@ -37,7 +37,8 @@ const Assistant = () => {
       setChatMessages(prev => [...prev, { role: 'ai', text, sources }]);
     } catch (error) {
       console.error(error);
-      setChatMessages(prev => [...prev, { role: 'ai', text: t.errorAPI }]);
+      const errorMsg = error.message ? `${t.errorAPI} (${error.message})` : t.errorAPI;
+      setChatMessages(prev => [...prev, { role: 'ai', text: errorMsg }]);
     } finally { 
       setLoading(false); 
     }

@@ -196,7 +196,7 @@ export const articlesAPI = {
 // Gemini API (keeping existing functions but updating to include links)
 export const fetchGroundedResponse = async (userQuery, user, language) => {
   const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
-  const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
+  const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
   const targetLanguage = language === 'hi' ? 'Hindi' : 'English';
 
   const systemPrompt = `You are 'Shakti-Setu', a helpful legal assistant for women in India. Provide information based on Indian law. Your tone is supportive, clear, and empowering. 
@@ -224,7 +224,7 @@ export const fetchGroundedResponse = async (userQuery, user, language) => {
 
   const payload = {
     contents: [{ parts: [{ text: userQuery }] }],
-    tools: [{ "google_search": {} }],
+    tools: [{ "googleSearch": {} }],
     systemInstruction: {
       parts: [{ text: systemPrompt }]
     },
@@ -238,7 +238,8 @@ export const fetchGroundedResponse = async (userQuery, user, language) => {
     });
 
     if (!response.ok) {
-      throw new Error(`API Error: ${response.statusText}`);
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.error?.message || `API Error: ${response.statusText}`);
     }
 
     const result = await response.json();
@@ -268,7 +269,7 @@ export const fetchGroundedResponse = async (userQuery, user, language) => {
 // Fetch Demographic Insights with article links
 export const fetchDemographicInsights = async (age, state) => {
   const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
-  const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
+  const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
 
   const prompt = `
     Generate a JSON object for a female user, Age: ${age}, State: ${state}, India.
