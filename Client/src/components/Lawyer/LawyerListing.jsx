@@ -1,4 +1,4 @@
-import { useEffect, useState, useContext } from 'react';
+import { useEffect, useState, useMemo, useContext } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import {
   MapPin,
@@ -37,18 +37,45 @@ const LawyerListing = () => {
     state: '',
     district: '',
     specialization: '',
-    search: '',
   });
+  const [searchTerm, setSearchTerm] = useState('');
 
   const [availableDistricts, setAvailableDistricts] = useState([]);
   const [loadingDistricts, setLoadingDistricts] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
 
-  // Fetch lawyers whenever filters change
+  // Fetch lawyers from backend when state, district, or specialization changes
   useEffect(() => {
-    dispatch(getApprovedLawyers(filters));
+    const params = {
+      state: filters.state,
+      district: filters.district,
+      specialization: filters.specialization,
+    };
+    // Only pass search to backend if no state is selected (global search)
+    if (!filters.state && searchTerm.trim()) {
+      params.search = searchTerm.trim();
+    }
+    dispatch(getApprovedLawyers(params));
     setCurrentPage(1);
-  }, [dispatch, filters]);
+  }, [dispatch, filters.state, filters.district, filters.specialization]);
+
+  // Debounced server search when searching across All States
+  useEffect(() => {
+    if (filters.state) return; // Instant client-side search handles state-specific queries without network delay
+    const timer = setTimeout(() => {
+      dispatch(
+        getApprovedLawyers({
+          state: '',
+          district: '',
+          specialization: filters.specialization,
+          search: searchTerm.trim(),
+        })
+      );
+      setCurrentPage(1);
+    }, 350);
+
+    return () => clearTimeout(timer);
+  }, [dispatch, filters.state, filters.specialization, searchTerm]);
 
   // Fetch available districts based on selected state
   useEffect(() => {
@@ -99,8 +126,9 @@ const LawyerListing = () => {
       state: '',
       district: '',
       specialization: '',
-      search: '',
     });
+    setSearchTerm('');
+    setCurrentPage(1);
   };
 
   const handleViewDetails = (lawyerId) => {
@@ -108,17 +136,37 @@ const LawyerListing = () => {
     dispatch(getLawyerById(lawyerId));
   };
 
+  // Instant Client-Side Filter over approvedLawyers
+  const displayedLawyers = useMemo(() => {
+    if (!searchTerm.trim()) return approvedLawyers;
+    const q = searchTerm.toLowerCase().trim();
+    return approvedLawyers.filter((lawyer) => {
+      const inName = lawyer.name?.toLowerCase().includes(q);
+      const inCity = lawyer.city?.toLowerCase().includes(q);
+      const inDistrict = lawyer.district?.toLowerCase().includes(q);
+      const inState = lawyer.state?.toLowerCase().includes(q);
+      const inPhone = lawyer.phone?.toLowerCase().includes(q);
+      const inBar = lawyer.barNumber?.toLowerCase().includes(q);
+      const inBio = lawyer.bio?.toLowerCase().includes(q);
+      const inSpec = Array.isArray(lawyer.specialization)
+        ? lawyer.specialization.some((s) => s.toLowerCase().includes(q))
+        : String(lawyer.specialization || '').toLowerCase().includes(q);
+
+      return inName || inCity || inDistrict || inState || inPhone || inBar || inBio || inSpec;
+    });
+  }, [approvedLawyers, searchTerm]);
+
   if (selectedLawyerId) {
     return <LawyerDetail lawyerId={selectedLawyerId} />;
   }
 
   const hasActiveFilters = Boolean(
-    filters.state || filters.district || filters.specialization || filters.search
+    filters.state || filters.district || filters.specialization || searchTerm.trim()
   );
 
   // Pagination calculation
-  const totalPages = Math.ceil(approvedLawyers.length / ITEMS_PER_PAGE) || 1;
-  const paginatedLawyers = approvedLawyers.slice(
+  const totalPages = Math.ceil(displayedLawyers.length / ITEMS_PER_PAGE) || 1;
+  const paginatedLawyers = displayedLawyers.slice(
     (currentPage - 1) * ITEMS_PER_PAGE,
     currentPage * ITEMS_PER_PAGE
   );
@@ -189,8 +237,11 @@ const LawyerListing = () => {
             <input
               type="text"
               placeholder="Search by advocate name, district, city, state, or specialization..."
-              value={filters.search}
-              onChange={(e) => handleFilterChange('search', e.target.value)}
+              value={searchTerm}
+              onChange={(e) => {
+                setSearchTerm(e.target.value);
+                setCurrentPage(1);
+              }}
               style={{
                 width: '100%',
                 padding: '14px 40px 14px 44px',
@@ -203,9 +254,12 @@ const LawyerListing = () => {
                 boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.2)',
               }}
             />
-            {filters.search && (
+            {searchTerm && (
               <button
-                onClick={() => handleFilterChange('search', '')}
+                onClick={() => {
+                  setSearchTerm('');
+                  setCurrentPage(1);
+                }}
                 style={{
                   position: 'absolute',
                   right: '12px',
@@ -365,9 +419,9 @@ const LawyerListing = () => {
           padding: '0 0.5rem',
         }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
           <span style={{ fontSize: '1.1rem', fontWeight: 700, color: '#f1f5f9' }}>
-            {loading ? 'Searching advocates...' : `${approvedLawyers.length} Advocates Available`}
+            {loading ? 'Searching advocates...' : `${displayedLawyers.length} Advocates Available`}
           </span>
           {filters.state && (
             <span
@@ -397,6 +451,20 @@ const LawyerListing = () => {
               District: {filters.district}
             </span>
           )}
+          {searchTerm.trim() && (
+            <span
+              style={{
+                fontSize: '0.8rem',
+                padding: '3px 10px',
+                borderRadius: '99px',
+                background: 'rgba(234, 179, 8, 0.2)',
+                border: '1px solid rgba(234, 179, 8, 0.4)',
+                color: '#fde047',
+              }}
+            >
+              Search: "{searchTerm.trim()}"
+            </span>
+          )}
         </div>
 
         {totalPages > 1 && (
@@ -407,7 +475,7 @@ const LawyerListing = () => {
       </div>
 
       {/* Main Lawyer Cards List */}
-      {loading ? (
+      {loading && approvedLawyers.length === 0 ? (
         <div style={{ textAlign: 'center', padding: '4rem 1rem' }}>
           <div
             style={{
@@ -422,13 +490,13 @@ const LawyerListing = () => {
           />
           <p style={{ color: 'var(--text-muted)' }}>Loading advocates from directory...</p>
         </div>
-      ) : approvedLawyers.length === 0 ? (
+      ) : displayedLawyers.length === 0 ? (
         <GlassCard style={{ textAlign: 'center', padding: '4rem 2rem' }}>
           <Scale size={48} style={{ margin: '0 auto 1rem', color: 'var(--text-muted)', opacity: 0.5 }} />
           <h3 style={{ fontSize: '1.25rem', marginBottom: '0.5rem', color: '#f1f5f9' }}>No advocates found</h3>
           <p style={{ color: 'var(--text-muted)', maxWidth: '450px', margin: '0 auto 1.5rem', lineHeight: 1.5 }}>
             {hasActiveFilters
-              ? 'No lawyers match your selected state, district, or search criteria. Try clearing some filters to see more results.'
+              ? 'No lawyers match your selected state, district, or search query. Try clearing some filters to see more results.'
               : 'No approved lawyers are currently listed in the system.'}
           </p>
           {hasActiveFilters && (
