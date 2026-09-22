@@ -3,18 +3,17 @@ import { useDispatch, useSelector } from 'react-redux';
 import {
   MapPin,
   Phone,
-  Mail,
   Briefcase,
   Scale,
   Search,
-  Star,
   Eye,
   X,
   ChevronLeft,
   ChevronRight,
-  Filter,
   ShieldCheck,
   Globe,
+  Sparkles,
+  RotateCcw,
 } from 'lucide-react';
 import { AppContext } from '../../context/AppContext';
 import { getApprovedLawyers } from '../../store/slices/lawyerSlice';
@@ -27,9 +26,20 @@ import { LAWYER_SPECIALIZATIONS } from '../../constants/lawyerSpecializations';
 
 const ITEMS_PER_PAGE = 18;
 
+const POPULAR_SEARCH_TAGS = [
+  'Delhi',
+  'Maharashtra',
+  'Madhya Pradesh',
+  'Family Law',
+  'Criminal Law',
+  'Domestic Violence',
+  'Women Rights',
+  'Pune',
+];
+
 const LawyerListing = () => {
   const dispatch = useDispatch();
-  const { t, language, setPage, openLawyerId, setOpenLawyerId } = useContext(AppContext);
+  const { openLawyerId, setOpenLawyerId } = useContext(AppContext);
   const { approvedLawyers, loading } = useSelector((state) => state.lawyer);
   const [selectedLawyerId, setSelectedLawyerId] = useState(null);
 
@@ -46,36 +56,15 @@ const LawyerListing = () => {
 
   // Fetch lawyers from backend when state, district, or specialization changes
   useEffect(() => {
-    const params = {
-      state: filters.state,
-      district: filters.district,
-      specialization: filters.specialization,
-    };
-    // Only pass search to backend if no state is selected (global search)
-    if (!filters.state && searchTerm.trim()) {
-      params.search = searchTerm.trim();
-    }
-    dispatch(getApprovedLawyers(params));
+    dispatch(
+      getApprovedLawyers({
+        state: filters.state,
+        district: filters.district,
+        specialization: filters.specialization,
+      })
+    );
     setCurrentPage(1);
   }, [dispatch, filters.state, filters.district, filters.specialization]);
-
-  // Debounced server search when searching across All States
-  useEffect(() => {
-    if (filters.state) return; // Instant client-side search handles state-specific queries without network delay
-    const timer = setTimeout(() => {
-      dispatch(
-        getApprovedLawyers({
-          state: '',
-          district: '',
-          specialization: filters.specialization,
-          search: searchTerm.trim(),
-        })
-      );
-      setCurrentPage(1);
-    }, 350);
-
-    return () => clearTimeout(timer);
-  }, [dispatch, filters.state, filters.specialization, searchTerm]);
 
   // Fetch available districts based on selected state
   useEffect(() => {
@@ -136,23 +125,36 @@ const LawyerListing = () => {
     dispatch(getLawyerById(lawyerId));
   };
 
-  // Instant Client-Side Filter over approvedLawyers
+  // High-performance tokenized multi-field search (matches across all fields)
   const displayedLawyers = useMemo(() => {
     if (!searchTerm.trim()) return approvedLawyers;
-    const q = searchTerm.toLowerCase().trim();
-    return approvedLawyers.filter((lawyer) => {
-      const inName = lawyer.name?.toLowerCase().includes(q);
-      const inCity = lawyer.city?.toLowerCase().includes(q);
-      const inDistrict = lawyer.district?.toLowerCase().includes(q);
-      const inState = lawyer.state?.toLowerCase().includes(q);
-      const inPhone = lawyer.phone?.toLowerCase().includes(q);
-      const inBar = lawyer.barNumber?.toLowerCase().includes(q);
-      const inBio = lawyer.bio?.toLowerCase().includes(q);
-      const inSpec = Array.isArray(lawyer.specialization)
-        ? lawyer.specialization.some((s) => s.toLowerCase().includes(q))
-        : String(lawyer.specialization || '').toLowerCase().includes(q);
 
-      return inName || inCity || inDistrict || inState || inPhone || inBar || inBio || inSpec;
+    // Split search input into tokens (e.g. "madhya pradesh" -> ["madhya", "pradesh"])
+    const tokens = searchTerm.toLowerCase().trim().split(/\s+/).filter(Boolean);
+
+    return approvedLawyers.filter((lawyer) => {
+      const specStr = Array.isArray(lawyer.specialization)
+        ? lawyer.specialization.join(' ')
+        : lawyer.specialization || '';
+
+      // Aggregate all searchable text for this advocate
+      const searchableText = [
+        lawyer.name,
+        lawyer.state,
+        lawyer.district,
+        lawyer.city,
+        lawyer.address,
+        lawyer.barNumber,
+        lawyer.phone,
+        specStr,
+        lawyer.bio,
+      ]
+        .filter(Boolean)
+        .join(' ')
+        .toLowerCase();
+
+      // Every word in search query must be present
+      return tokens.every((token) => searchableText.includes(token));
     });
   }, [approvedLawyers, searchTerm]);
 
@@ -174,7 +176,7 @@ const LawyerListing = () => {
   return (
     <div className="page-container" style={{ maxWidth: '1240px', margin: '0 auto', padding: '2rem 1.5rem' }}>
       {/* Header Section */}
-      <div style={{ marginBottom: '2.5rem', textAlign: 'center' }}>
+      <div style={{ marginBottom: '2rem', textAlign: 'center' }}>
         <div
           style={{
             display: 'inline-flex',
@@ -219,24 +221,24 @@ const LawyerListing = () => {
         </p>
       </div>
 
-      {/* Filter Card */}
-      <GlassCard style={{ marginBottom: '2rem', padding: '1.5rem' }}>
+      {/* Redesigned Search & Filter Card */}
+      <GlassCard style={{ marginBottom: '2rem', padding: '1.75rem' }}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-          {/* Main Search Input */}
+          {/* Prominent Search Bar */}
           <div style={{ position: 'relative' }}>
             <Search
-              size={20}
+              size={22}
               style={{
                 position: 'absolute',
-                left: '14px',
+                left: '16px',
                 top: '50%',
                 transform: 'translateY(-50%)',
-                color: 'var(--text-muted, #94a3b8)',
+                color: '#c084fc',
               }}
             />
             <input
               type="text"
-              placeholder="Search by advocate name, district, city, state, or specialization..."
+              placeholder="Type any advocate name, state (e.g. Madhya Pradesh), district, city, or specialization..."
               value={searchTerm}
               onChange={(e) => {
                 setSearchTerm(e.target.value);
@@ -244,53 +246,91 @@ const LawyerListing = () => {
               }}
               style={{
                 width: '100%',
-                padding: '14px 40px 14px 44px',
-                background: 'rgba(0, 0, 0, 0.3)',
-                border: '1px solid rgba(255, 255, 255, 0.12)',
-                borderRadius: '12px',
+                padding: '16px 44px 16px 48px',
+                background: 'rgba(0, 0, 0, 0.4)',
+                border: '1.5px solid rgba(168, 85, 247, 0.4)',
+                borderRadius: '14px',
                 color: '#fff',
-                fontSize: '1rem',
+                fontSize: '1.05rem',
                 outline: 'none',
-                boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.2)',
+                boxShadow: '0 4px 20px rgba(0,0,0,0.3)',
+                transition: 'border-color 0.2s ease, box-shadow 0.2s ease',
               }}
             />
             {searchTerm && (
               <button
+                type="button"
                 onClick={() => {
                   setSearchTerm('');
                   setCurrentPage(1);
                 }}
                 style={{
                   position: 'absolute',
-                  right: '12px',
+                  right: '14px',
                   top: '50%',
                   transform: 'translateY(-50%)',
-                  background: 'none',
+                  background: 'rgba(255, 255, 255, 0.1)',
                   border: 'none',
-                  color: 'var(--text-muted)',
+                  borderRadius: '50%',
+                  width: '28px',
+                  height: '28px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: '#fff',
                   cursor: 'pointer',
-                  padding: '4px',
                 }}
                 title="Clear search"
               >
-                <X size={18} />
+                <X size={16} />
               </button>
             )}
           </div>
 
-          {/* Grid Filters: State, District, Specialization */}
+          {/* Quick Search Chips */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+            <span style={{ fontSize: '0.8rem', color: 'var(--text-muted, #94a3b8)', display: 'flex', alignItems: 'center', gap: '4px' }}>
+              <Sparkles size={13} style={{ color: '#c084fc' }} /> Quick Search:
+            </span>
+            {POPULAR_SEARCH_TAGS.map((tag) => (
+              <button
+                key={tag}
+                type="button"
+                onClick={() => {
+                  setSearchTerm(tag);
+                  setCurrentPage(1);
+                }}
+                style={{
+                  background: searchTerm.toLowerCase() === tag.toLowerCase() ? 'rgba(168, 85, 247, 0.3)' : 'rgba(255, 255, 255, 0.05)',
+                  border: `1px solid ${searchTerm.toLowerCase() === tag.toLowerCase() ? '#a855f7' : 'rgba(255, 255, 255, 0.1)'}`,
+                  color: searchTerm.toLowerCase() === tag.toLowerCase() ? '#f3e8ff' : '#cbd5e1',
+                  borderRadius: '99px',
+                  padding: '4px 12px',
+                  fontSize: '0.78rem',
+                  cursor: 'pointer',
+                  transition: 'all 0.15s ease',
+                }}
+              >
+                {tag}
+              </button>
+            ))}
+          </div>
+
+          {/* Dropdown Filters: State, District, Specialization */}
           <div
             style={{
               display: 'grid',
               gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
               gap: '1rem',
               alignItems: 'flex-end',
+              borderTop: '1px solid rgba(255, 255, 255, 0.08)',
+              paddingTop: '1.25rem',
             }}
           >
             {/* State Selector */}
             <div>
               <label style={{ display: 'block', marginBottom: '6px', fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-muted)' }}>
-                State
+                State / UT
               </label>
               <select
                 value={filters.state}
@@ -398,7 +438,7 @@ const LawyerListing = () => {
                     transition: 'all 0.2s ease',
                   }}
                 >
-                  <X size={16} />
+                  <RotateCcw size={15} />
                   Reset Filters
                 </button>
               </div>
@@ -420,8 +460,8 @@ const LawyerListing = () => {
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-          <span style={{ fontSize: '1.1rem', fontWeight: 700, color: '#f1f5f9' }}>
-            {loading ? 'Searching advocates...' : `${displayedLawyers.length} Advocates Available`}
+          <span style={{ fontSize: '1.15rem', fontWeight: 700, color: '#f1f5f9' }}>
+            {loading ? 'Searching advocates...' : `${displayedLawyers.length} Advocates Found`}
           </span>
           {filters.state && (
             <span
@@ -462,7 +502,7 @@ const LawyerListing = () => {
                 color: '#fde047',
               }}
             >
-              Search: "{searchTerm.trim()}"
+              Matching: "{searchTerm.trim()}"
             </span>
           )}
         </div>
@@ -512,7 +552,7 @@ const LawyerListing = () => {
                 fontWeight: 600,
               }}
             >
-              View All Advocates
+              Reset All Filters
             </button>
           )}
         </GlassCard>
