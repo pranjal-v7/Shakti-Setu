@@ -1,0 +1,11 @@
+{
+  "name": "shakti-setu",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Shakti-Setu - Legal Empowerment Platform for Women",
+  "scripts": {
+    "client": "npm run dev --prefix Client",
+    "server": "npm run dev --prefix Server",
+    "seed:lawyers": "npm run seed:lawyers --prefix Server"
+  }
+}

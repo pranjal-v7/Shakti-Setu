@@ -43,6 +43,11 @@ const lawyerSchema = new mongoose.Schema({
     type: String,
     required: true
   },
+  district: {
+    type: String,
+    default: '',
+    trim: true
+  },
   city: {
     type: String,
     default: ''
@@ -111,10 +116,16 @@ const lawyerSchema = new mongoose.Schema({
   isSuspended: {
     type: Boolean,
     default: false
+  },
+  isSeed: {
+    type: Boolean,
+    default: false
   }
 }, {
   timestamps: true
 });
+
+lawyerSchema.index({ status: 1, isSuspended: 1, state: 1, district: 1 });
 
 // Hash password before saving
 lawyerSchema.pre('save', async function() {

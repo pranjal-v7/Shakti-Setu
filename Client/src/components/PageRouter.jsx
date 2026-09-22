@@ -37,12 +37,14 @@ const PageRouter = () => {
   // Public routes (no auth)
   if (!isAuthenticated && !isLawyerAuth) {
     switch (page) {
-      case 'register':      return <Register />;
+      case 'register': return <Register />;
       case 'lawyer-register': return <Register />;
-      case 'resources':    return <Resources />;
-      case 'legal-guide':  return <LegalGuide />;
-      case 'article':      return <ArticleView />;
-      default:             return <LandingPage />;
+      case 'lawyers': return <LawyerListing />;
+      case 'lawyer-detail': return <LawyerDetail />;
+      case 'resources': return <Resources />;
+      case 'legal-guide': return <LegalGuide />;
+      case 'article': return <ArticleView />;
+      default: return <LandingPage />;
     }
   }
 
@@ -50,16 +52,21 @@ const PageRouter = () => {
   if (isLawyerAuth) {
     switch (page) {
       case 'lawyer-dashboard': return <LawyerDashboard />;
-      case 'lawyer-verify':    return <LawyerVerification />;
-      case 'lawyer-clients':   return <ConsultationManagement />;
-      case 'lawyer-profile':   return <LawyerProfile />;
-      case 'chat':             return <Chat />;
-      case 'legal-guide':      return <LegalGuide />;
-      case 'article':          return <ArticleView />;
-      case 'resources':        return <Resources />;
-      default:                 return <LawyerProfile />;
+      case 'lawyer-verify': return <LawyerVerification />;
+      case 'lawyer-clients': return <ConsultationManagement />;
+      case 'lawyer-profile': return <LawyerProfile />;
+      case 'lawyers': return <LawyerListing />;
+      case 'lawyer-detail': return <LawyerDetail />;
+      case 'chat': return <Chat />;
+      case 'legal-guide': return <LegalGuide />;
+      case 'article': return <ArticleView />;
+      case 'resources': return <Resources />;
+      default: return <LawyerProfile />;
     }
   }
+
+  const { user } = useSelector(s => s.auth);
+  const isAdmin = user?.role === 'admin';
 
   // User / Admin portal routes
   switch (page) {
@@ -73,8 +80,14 @@ const PageRouter = () => {
     case 'legal-guide':       return <LegalGuide />;
     case 'article':           return <ArticleView />;
     case 'resources':         return <Resources />;
-    case 'admin':             return <AdminPanel />;
-    default:                  return <Dashboard />;
+    case 'admin':
+    case 'admin-dashboard':
+    case 'admin-pending':
+    case 'admin-users':
+    case 'admin-lawyers':
+    case 'admin-reports':
+    case 'admin-articles':    return <AdminPanel />;
+    default:                  return isAdmin ? <AdminPanel /> : <Dashboard />;
   }
 };
 

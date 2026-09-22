@@ -171,7 +171,9 @@ const LawyerDetail = ({ lawyerId }) => {
                 <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '0.25rem' }}>Location</p>
                 <p style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
                   <MapPin size={14} />
-                  {lawyerDetail.city && `${lawyerDetail.city}, `}{lawyerDetail.state}
+                  {lawyerDetail.city && `${lawyerDetail.city}, `}
+                  {lawyerDetail.district && lawyerDetail.district !== lawyerDetail.city ? `${lawyerDetail.district}, ` : ''}
+                  {lawyerDetail.state}
                 </p>
               </div>
               <div>

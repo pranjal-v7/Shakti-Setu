@@ -5,6 +5,7 @@ const {
   login,
   getMe,
   getApprovedLawyers,
+  getDistricts,
   getPendingLawyers,
   updateLawyerStatus,
   updateProfile,
@@ -17,6 +18,7 @@ const { authMiddleware, adminMiddleware } = require('../middleware/authMiddlewar
 router.post('/register', register);
 router.post('/login', login);
 router.get('/approved', getApprovedLawyers); // Public - users can see approved lawyers
+router.get('/districts', getDistricts); // Public - fetch available districts for state
 
 // Lawyer protected routes
 router.get('/me', lawyerAuthMiddleware, getMe);

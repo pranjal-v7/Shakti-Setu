@@ -37,8 +37,16 @@ const Assistant = () => {
       setChatMessages(prev => [...prev, { role: 'ai', text, sources }]);
     } catch (error) {
       console.error(error);
-      const errorMsg = error.message ? `${t.errorAPI} (${error.message})` : t.errorAPI;
-      setChatMessages(prev => [...prev, { role: 'ai', text: errorMsg }]);
+      const isKeyError =
+        error.message?.includes('API key not valid') ||
+        error.message?.includes('API_KEY_INVALID') ||
+        error.message?.includes('API key');
+      const errorMsg = isKeyError
+        ? 'Gemini API key is invalid or expired. Please update VITE_GEMINI_API_KEY in Client/.env with a new free API key from Google AI Studio (https://aistudio.google.com).'
+        : error.message
+        ? `${t.errorAPI} (${error.message})`
+        : t.errorAPI;
+      setChatMessages((prev) => [...prev, { role: 'ai', text: errorMsg }]);
     } finally { 
       setLoading(false); 
     }

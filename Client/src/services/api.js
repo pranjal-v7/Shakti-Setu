@@ -95,10 +95,12 @@ export const lawyerAPI = {
   getApprovedLawyers: (filters = {}) => {
     const params = new URLSearchParams();
     if (filters.state) params.append('state', filters.state);
+    if (filters.district) params.append('district', filters.district);
     if (filters.specialization) params.append('specialization', filters.specialization);
     if (filters.search) params.append('search', filters.search);
     return lawyerApi.get(`/lawyers/approved?${params.toString()}`);
   },
+  getDistricts: (state) => lawyerApi.get(`/lawyers/districts${state ? `?state=${encodeURIComponent(state)}` : ''}`),
   getLawyerById: (lawyerId) => lawyerApi.get(`/consultations/lawyer/${lawyerId}`),
   getPendingLawyers: () => api.get('/lawyers/pending'),
   updateLawyerStatus: (lawyerId, status, rejectionReason = '') =>
@@ -196,7 +198,7 @@ export const articlesAPI = {
 // Gemini API (keeping existing functions but updating to include links)
 export const fetchGroundedResponse = async (userQuery, user, language) => {
   const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
-  const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+  const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${apiKey}`;
   const targetLanguage = language === 'hi' ? 'Hindi' : 'English';
 
   const systemPrompt = `You are 'Shakti-Setu', a helpful legal assistant for women in India. Provide information based on Indian law. Your tone is supportive, clear, and empowering. 
@@ -269,7 +271,7 @@ export const fetchGroundedResponse = async (userQuery, user, language) => {
 // Fetch Demographic Insights with article links
 export const fetchDemographicInsights = async (age, state) => {
   const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
-  const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+  const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${apiKey}`;
 
   const prompt = `
     Generate a JSON object for a female user, Age: ${age}, State: ${state}, India.

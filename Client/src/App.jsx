@@ -5,6 +5,7 @@ import { getCurrentUser } from "./store/slices/authSlice";
 import { getCurrentLawyer } from "./store/slices/lawyerSlice";
 import UserLayout from "./components/layouts/UserLayout";
 import LawyerLayout from "./components/layouts/LawyerLayout";
+import AdminLayout from "./components/layouts/AdminLayout";
 import PageRouter from "./components/PageRouter";
 import "./styles/App.css";
 
@@ -45,7 +46,7 @@ function AppContent() {
       setPage('lawyer-dashboard');
     } else if (isAuthenticated && page === 'home') {
       const isAdmin = user?.role === 'admin';
-      setPage(isAdmin ? 'admin' : 'dashboard');
+      setPage(isAdmin ? 'admin-dashboard' : 'dashboard');
     }
   }, [isAuthenticated, isLawyerAuth, user, page, setPage]);
 
@@ -63,6 +64,17 @@ function AppContent() {
 
   // ── User / Admin portal ───────────────────────────────────────────────────
   if (isAuthenticated) {
+    const isAdmin = user?.role === 'admin';
+    if (isAdmin) {
+      return (
+        <div style={{ position: 'relative', minHeight: '100vh', background: 'var(--bg-base)' }}>
+          <div className="background-overlay" />
+          <AdminLayout>
+            <PageRouter />
+          </AdminLayout>
+        </div>
+      );
+    }
     return (
       <div style={{ position: 'relative', minHeight: '100vh', background: 'var(--bg-base)' }}>
         <div className="background-overlay" />

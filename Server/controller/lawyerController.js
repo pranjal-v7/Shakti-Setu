@@ -162,22 +162,30 @@ exports.getMe = async (req, res) => {
 // Get All Lawyers (for users - only approved)
 exports.getApprovedLawyers = async (req, res) => {
   try {
-    const { state, specialization, search } = req.query;
+    const { state, district, specialization, search } = req.query;
 
     const query = { status: "approved", isSuspended: { $ne: true } };
 
-    if (state) {
-      query.state = state;
+    if (state && state.trim()) {
+      query.state = new RegExp(`^${state.trim()}$`, "i");
     }
 
-    if (specialization) {
-      query.specialization = { $in: [specialization] };
+    if (district && district.trim()) {
+      query.district = new RegExp(`^${district.trim()}$`, "i");
     }
 
-    if (search) {
+    if (specialization && specialization.trim()) {
+      query.specialization = { $in: [specialization.trim()] };
+    }
+
+    if (search && search.trim()) {
+      const searchRegex = { $regex: search.trim(), $options: "i" };
       query.$or = [
-        { name: { $regex: search, $options: "i" } },
-        { specialization: { $regex: search, $options: "i" } },
+        { name: searchRegex },
+        { specialization: searchRegex },
+        { district: searchRegex },
+        { city: searchRegex },
+        { state: searchRegex },
       ];
     }
 
@@ -192,6 +200,32 @@ exports.getApprovedLawyers = async (req, res) => {
     });
   } catch (error) {
     console.error("Get lawyers error:", error);
+    res.status(500).json({ message: "Server error", error: error.message });
+  }
+};
+
+// Get Available Districts (optionally filtered by state)
+exports.getDistricts = async (req, res) => {
+  try {
+    const { state } = req.query;
+    const query = { status: "approved", isSuspended: { $ne: true } };
+    if (state && state.trim()) {
+      query.state = new RegExp(`^${state.trim()}$`, "i");
+    }
+
+    const districts = await Lawyer.distinct("district", query);
+    const sortedDistricts = districts
+      .filter((d) => d && d.trim().length > 0)
+      .map((d) => d.trim())
+      .filter((item, index, self) => self.indexOf(item) === index)
+      .sort((a, b) => a.localeCompare(b));
+
+    res.json({
+      success: true,
+      districts: sortedDistricts,
+    });
+  } catch (error) {
+    console.error("Get districts error:", error);
     res.status(500).json({ message: "Server error", error: error.message });
   }
 };
